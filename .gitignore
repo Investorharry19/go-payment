@@ -1,0 +1,11 @@
+.env
+vendor/
+*.log
+*.sqlite
+.DS_Store
+.idea/
+.vscode/
+bin/
+out/
+coverage/
+*.exe
