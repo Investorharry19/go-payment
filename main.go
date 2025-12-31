@@ -45,7 +45,7 @@ func main() {
 	env := os.Getenv("ENV")
 	switch env {
 	case "PROD":
-		docs.SwaggerInfo.Host = "https://harrison-go-payment-microservice.up.railway.app"
+		docs.SwaggerInfo.Host = "harrison-go-payment-microservice.up.railway.app"
 	default:
 		docs.SwaggerInfo.Host = "localhost:8080"
 	}

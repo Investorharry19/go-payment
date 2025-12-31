@@ -87,7 +87,7 @@ func CreatePaymentController(c *fiber.Ctx, store *payment.PaymentStoreDB, bank p
 	callbackUrl := ""
 	switch env {
 	case "PROD":
-		callbackUrl = "https://harrison-go-payment-microservice.up.railway.app"
+		callbackUrl = "harrison-go-payment-microservice.up.railway.app"
 	default:
 		callbackUrl = "http://localhost:8080"
 	}
