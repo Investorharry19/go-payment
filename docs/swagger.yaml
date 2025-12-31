@@ -1,0 +1,304 @@
+definitions:
+  http.ErrorResponse:
+    properties:
+      error:
+        example: Bad Request
+        type: string
+    type: object
+  http.OperationResponse:
+    properties:
+      amount:
+        example: 5000
+        type: integer
+      created_at:
+        example: "2025-12-31T05:23:02Z"
+        type: string
+      id:
+        example: op_123
+        type: string
+      type:
+        example: authorization
+        type: string
+    type: object
+  http.PaymentFullResponse:
+    properties:
+      amount:
+        example: 5000
+        type: integer
+      id:
+        example: pay_12345
+        type: string
+      operations:
+        items:
+          $ref: '#/definitions/http.OperationResponse'
+        type: array
+      order_id:
+        example: order_123
+        type: string
+      user_id:
+        example: user_123
+        type: string
+    type: object
+  http.PaymentRefundResponse:
+    properties:
+      amount:
+        example: 5000
+        type: integer
+      id:
+        example: pay_12345
+        type: string
+      operations:
+        items:
+          $ref: '#/definitions/http.OperationResponse'
+        type: array
+      order_id:
+        example: order_123
+        type: string
+      user_id:
+        example: user_123
+        type: string
+    type: object
+  http.PaymentRequest:
+    properties:
+      amount:
+        example: 5000
+        type: integer
+      email:
+        example: customer@example.com
+        type: string
+      id:
+        example: pay_12345
+        type: string
+      order_id:
+        example: order_123
+        type: string
+      user_id:
+        example: user_123
+        type: string
+    type: object
+  http.PaymentResponse:
+    properties:
+      sql_response: {}
+      stripe_response: {}
+    type: object
+  http.PaymentResponseByID:
+    properties:
+      amount:
+        example: 5000
+        type: integer
+      id:
+        example: pay_12345
+        type: string
+      operations:
+        items:
+          $ref: '#/definitions/http.OperationResponse'
+        type: array
+      order_id:
+        example: order_123
+        type: string
+      user_id:
+        example: user_123
+        type: string
+    type: object
+  http.RefundRequest:
+    properties:
+      operation_id:
+        example: op_12345
+        type: string
+    type: object
+  http.TokenRequest:
+    properties:
+      password:
+        example: password123
+        type: string
+      username:
+        example: harrison
+        type: string
+    type: object
+  http.TokenResponse:
+    properties:
+      access_token:
+        example: eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+      expires_in:
+        example: 299
+        type: integer
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: amehharrison202017@gmail.com
+    name: API Support
+  description: This is a mock Payment Gateway API.
+  title: Payment Gateway API
+  version: "1.0"
+paths:
+  /v1/payments:
+    get:
+      description: Retrieves all payments with their associated operations
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/http.PaymentFullResponse'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Get all payments
+      tags:
+      - Payments
+    post:
+      consumes:
+      - application/json
+      description: Creates a new payment and stores it in the database. Requires JWT
+        authentication.
+      parameters:
+      - description: Payment details
+        in: body
+        name: payment
+        required: true
+        schema:
+          $ref: '#/definitions/http.PaymentRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.PaymentResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Create a payment
+      tags:
+      - Payments
+  /v1/payments/{id}:
+    get:
+      description: Retrieves a single payment by its ID, including operations
+      parameters:
+      - description: Payment ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.PaymentResponseByID'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Get a payment by ID
+      tags:
+      - Payments
+  /v1/payments/{id}/refund:
+    post:
+      consumes:
+      - application/json
+      description: Applies a refund operation to a specific payment by ID
+      parameters:
+      - description: Payment ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Refund operation details
+        in: body
+        name: refund
+        required: true
+        schema:
+          $ref: '#/definitions/http.RefundRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.PaymentRefundResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      security:
+      - ApiKeyAuth: []
+      summary: Refund a payment
+      tags:
+      - Payments
+  /v1/users/mock-authoriz-user:
+    post:
+      consumes:
+      - application/json
+      description: Generates a mock JWT token for a given username and password. For
+        testing purposes only.
+      parameters:
+      - description: Username and password
+        in: body
+        name: credentials
+        required: true
+        schema:
+          $ref: '#/definitions/http.TokenRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/http.TokenResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/http.ErrorResponse'
+      summary: Generate a mock JWT token
+      tags:
+      - Users
+securityDefinitions:
+  ApiKeyAuth:
+    description: 'Enter your JWT token in the format: "Bearer <your_token>"'
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

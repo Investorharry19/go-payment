@@ -9,3 +9,4 @@ bin/
 out/
 coverage/
 *.exe
+keys/private.pem
