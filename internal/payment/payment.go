@@ -86,9 +86,9 @@ func (p *Payment) Authorize() error {
 	return nil
 }
 
-// rule you can only capture an authorized payment
+// rule you can only capture an authorized or initiated payment
 func (p *Payment) Capture() error {
-	if p.State != Authorized {
+	if p.State != Authorized && p.State != Initiated {
 		return fmt.Errorf("%w: cannot capture from %s", ErrInvalidTranstion, p.State)
 	}
 

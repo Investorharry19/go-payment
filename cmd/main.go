@@ -3,9 +3,11 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/Investorharry19/go-payment/internal/http"
 	"github.com/Investorharry19/go-payment/internal/payment"
+	"github.com/Investorharry19/go-payment/internal/paystack"
 	"github.com/gofiber/fiber/v2"
 	"github.com/joho/godotenv"
 )
@@ -25,12 +27,12 @@ func main() {
 
 	db, err := payment.ConnectPostgres()
 	if err != nil {
-
 		panic(err)
 	}
 	store := payment.NewPaymentStoreDB(db)
-	bank := payment.MockBank{FailureRate: 0}
-	http.RegisterRoutes(app, store, &bank)
+	bank := paystack.NewPaystackClient(os.Getenv("PAYSTACK_SECRET_KEY"))
+
+	http.RegisterPaymentRoutes(app, store, bank)
 
 	// Run migrations at startup
 	err = db.AutoMigrate(

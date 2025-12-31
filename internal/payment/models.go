@@ -7,7 +7,10 @@ import (
 // Payment represents a single payment
 
 type Payment struct {
-	ID         string             `gorm:"primaryKey"`
+	ID      string `gorm:"primaryKey"`
+	UserID  string `gorm:"index;not null"` // usr_xxx
+	OrderID string `gorm:"index;not null"`
+
 	Amount     int64              `gorm:"not null"`
 	State      State              `gorm:"not null"`
 	Operations []PaymentOperation `gorm:"foreignKey:PaymentID"`
@@ -16,12 +19,16 @@ type Payment struct {
 }
 
 type PaymentOperation struct {
-	ID          uint   `gorm:"primaryKey;autoIncrement"`
-	PaymentID   string `gorm:"index;not null"` // Foreign key
-	OperationID string `gorm:"not null"`       // Idempotency key
-	Operation   string `gorm:"not null"`       // Operation type (e.g., "CAPTURE")
-	Result      string `gorm:"not null"`       // Result of operation (e.g., "success", "failed")
-	CreatedAt   time.Time
+	ID          uint   `gorm:"primaryKey"`
+	PaymentID   string `gorm:"not null;index:idx_payment_operation_id,unique"`
+	OperationID string `gorm:"not null;index:idx_payment_operation_id,unique"`
+
+	Operation string `gorm:"not null"` // AUTHORIZE, CAPTURE, VOID, REFUND
+	Amount    int64  `gorm:"not null"`
+	Result    string `gorm:"not null"` // success, failed
+
+	BankReference string
+	CreatedAt     time.Time
 }
 
 func (PaymentOperation) TableName() string {

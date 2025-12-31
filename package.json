@@ -1,0 +1,20 @@
+{
+  "name": "payment-gateway-go",
+  "version": "1.0.0",
+  "description": "A payment gateway microservice built buing payatack and golang",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "expose": "npx localtunnel --port 8080 --subdomain investorharry19-go-payment --local-host localhost"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Investorharry19/go-payment.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Investorharry19/go-payment/issues"
+  },
+  "homepage": "https://github.com/Investorharry19/go-payment#readme"
+}
