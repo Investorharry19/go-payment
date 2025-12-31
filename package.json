@@ -6,7 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "expose": "npx localtunnel --port 8080 --subdomain investorharry19-go-payment --local-host localhost"
-    ,"g-doc" : "swag init -g ./cmd/main.go"
+    ,"g-doc" : "swag init -g ./main.go"
   },
   "repository": {
     "type": "git",

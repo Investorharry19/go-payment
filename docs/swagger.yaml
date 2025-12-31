@@ -124,7 +124,7 @@ definitions:
         example: 299
         type: integer
     type: object
-host: localhost:8080
+host: harrison-go-payment-microservice.up.railway.app
 info:
   contact:
     email: amehharrison202017@gmail.com
@@ -295,6 +295,8 @@ paths:
       summary: Generate a mock JWT token
       tags:
       - Users
+schemes:
+- https
 securityDefinitions:
   ApiKeyAuth:
     description: 'Enter your JWT token in the format: "Bearer <your_token>"'

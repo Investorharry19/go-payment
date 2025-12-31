@@ -463,9 +463,9 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "localhost:8080",
+	Host:             "harrison-go-payment-microservice.up.railway.app",
 	BasePath:         "",
-	Schemes:          []string{},
+	Schemes:          []string{"https"},
 	Title:            "Payment Gateway API",
 	Description:      "This is a mock Payment Gateway API.",
 	InfoInstanceName: "swagger",

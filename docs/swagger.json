@@ -1,4 +1,7 @@
 {
+    "schemes": [
+        "https"
+    ],
     "swagger": "2.0",
     "info": {
         "description": "This is a mock Payment Gateway API.",
@@ -9,7 +12,7 @@
         },
         "version": "1.0"
     },
-    "host": "localhost:8080",
+    "host": "harrison-go-payment-microservice.up.railway.app",
     "paths": {
         "/v1/payments": {
             "get": {

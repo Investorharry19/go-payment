@@ -12,6 +12,7 @@ import (
 	"github.com/Investorharry19/go-payment/internal/paystack"
 	"github.com/Investorharry19/go-payment/middlewares"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/joho/godotenv"
 	fiberSwagger "github.com/swaggo/fiber-swagger"
 )
@@ -21,7 +22,8 @@ import (
 // @description This is a mock Payment Gateway API.
 // @contact.name API Support
 // @contact.email amehharrison202017@gmail.com
-// @host localhost:8080
+// @schemes https
+// @host harrison-go-payment-microservice.up.railway.app
 // @securityDefinitions.apikey ApiKeyAuth
 // @in header
 // @name Authorization
@@ -43,11 +45,24 @@ func main() {
 	app := fiber.New()
 
 	env := os.Getenv("ENV")
-	switch env {
-	case "PROD":
+	// Configure Swagger based on environment
+	if env == "PROD" {
 		docs.SwaggerInfo.Host = "harrison-go-payment-microservice.up.railway.app"
-	default:
+		docs.SwaggerInfo.Schemes = []string{"https"}
+		app.Use(cors.New(cors.Config{
+			AllowOrigins:     "https://harrison-go-payment-microservice.up.railway.app",
+			AllowMethods:     "GET,POST,PUT,DELETE,PATCH,OPTIONS",
+			AllowHeaders:     "Origin, Content-Type, Accept, Authorization",
+			AllowCredentials: true,
+		}))
+	} else {
 		docs.SwaggerInfo.Host = "localhost:8080"
+		docs.SwaggerInfo.Schemes = []string{"http"}
+		app.Use(cors.New(cors.Config{
+			AllowOrigins: "*",
+			AllowMethods: "GET,POST,PUT,DELETE,PATCH,OPTIONS",
+			AllowHeaders: "Origin, Content-Type, Accept, Authorization",
+		}))
 	}
 
 	app.Get("/swagger/*", fiberSwagger.WrapHandler)
