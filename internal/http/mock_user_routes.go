@@ -2,7 +2,10 @@ package http
 
 import (
 	"crypto/rsa"
+	"fmt"
+	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -12,12 +15,17 @@ import (
 var PrivateKey *rsa.PrivateKey
 
 func LoadPrivateKey() error {
-	keyData, err := os.ReadFile("keys/private.pem")
-	if err != nil {
-		return err
+	key := os.Getenv("PRIVATE_KEY")
+	if key == "" {
+		log.Fatal("PRIVATE_KEY not set")
 	}
 
-	PrivateKey, err = jwt.ParseRSAPrivateKeyFromPEM(keyData)
+	// Replace literal "\n" with actual newlines
+	key = strings.ReplaceAll(key, `\n`, "\n")
+
+	fmt.Println("Loaded private key successfully!")
+	var err error
+	PrivateKey, err = jwt.ParseRSAPrivateKeyFromPEM([]byte(key))
 	return err
 }
 
