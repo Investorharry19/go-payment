@@ -42,7 +42,7 @@ func NewPayment(id string, amount int64) *Payment {
 
 func (p *Payment) ApplyOperation(opID string, operation Operation) error {
 
-	// if the operation is already execulted --->return stored result
+	// if the operation is already execulted then return stored result
 	// if res, ok := p.Operations[opID]; ok {
 	// 	p.State = res.State
 	// 	return nil
@@ -122,6 +122,7 @@ func PaymentFunction() {
 
 /*
 
+	payment structure for reference
 	initiated
 		|
 	authorized

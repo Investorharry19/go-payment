@@ -158,7 +158,7 @@ func PaystackWebhookController(
 	store *payment.PaymentStoreDB,
 	bank payment.Bank,
 ) error {
-	// 1️⃣ Get raw body for signature verification
+	// Get raw body for signature verification
 	body := c.Body()
 	signature := c.Get("x-paystack-signature")
 	if signature == "" {
@@ -178,7 +178,7 @@ func PaystackWebhookController(
 		return c.Status(400).SendString("Invalid signature")
 	}
 
-	// 2️⃣ Parse the webhook event
+	// 2 Parse the webhook event
 	var event struct {
 		Event string `json:"event"`
 		Data  struct {
@@ -192,7 +192,7 @@ func PaystackWebhookController(
 
 	paymentID := event.Data.Reference
 
-	// 3️⃣ Retrieve the payment from DB
+	// 3 Retrieve the payment from DB
 	stored, err := store.Get(paymentID)
 	if err != nil {
 		fmt.Printf("Payment not found: %s\n", paymentID)
@@ -200,14 +200,14 @@ func PaystackWebhookController(
 	}
 	_ = stored
 
-	// 4️⃣ Verify with Paystack API
+	// 4 Verify with Paystack API
 	verifyResp, err := bank.Verify(c.Context(), paymentID)
 	if err != nil {
 		fmt.Printf("Paystack verify failed for %s: %v\n", paymentID, err)
 		return c.SendStatus(fiber.StatusOK)
 	}
 
-	// 5️⃣ Determine operation based on verification
+	// 5 Determine operation based on verification
 	var operation payment.Operation
 	if verifyResp.Status == "success" {
 		operation = payment.OPCapture
@@ -215,13 +215,13 @@ func PaystackWebhookController(
 		operation = payment.OPVoid
 	}
 
-	// 6️⃣ Apply operation (idempotently)
+	// 6 Apply operation (idempotently)
 	opID := "webhook-" + paymentID
 	if err := store.Apply(bank, paymentID, opID, operation); err != nil {
 		fmt.Printf("Failed to apply operation for %s: %v\n", paymentID, err)
 	}
 
-	// 7️⃣ Respond 200 OK to Paystack
+	// 7 Respond 200 OK to Paystack
 	return c.SendString("OK")
 }
 
