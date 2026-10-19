@@ -308,6 +308,10 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 5000
                 },
+                "currency": {
+                    "type": "string",
+                    "example": "NGN"
+                },
                 "id": {
                     "type": "string",
                     "example": "pay_12345"
@@ -335,6 +339,10 @@ const docTemplate = `{
                     "type": "integer",
                     "example": 5000
                 },
+                "currency": {
+                    "type": "string",
+                    "example": "NGN"
+                },
                 "id": {
                     "type": "string",
                     "example": "pay_12345"
@@ -361,6 +369,10 @@ const docTemplate = `{
                 "amount": {
                     "type": "integer",
                     "example": 5000
+                },
+                "currency": {
+                    "type": "string",
+                    "example": "NGN"
                 },
                 "email": {
                     "type": "string",
@@ -393,6 +405,10 @@ const docTemplate = `{
                 "amount": {
                     "type": "integer",
                     "example": 5000
+                },
+                "currency": {
+                    "type": "string",
+                    "example": "NGN"
                 },
                 "id": {
                     "type": "string",

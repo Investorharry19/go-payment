@@ -12,6 +12,7 @@ type Payment struct {
 	OrderID string `gorm:"index;not null"`
 
 	Amount     int64              `gorm:"not null"`
+	Currency   string             `gorm:"not null;size:3;default:NGN"`
 	State      State              `gorm:"not null"`
 	Operations []PaymentOperation `gorm:"foreignKey:PaymentID"`
 	CreatedAt  time.Time

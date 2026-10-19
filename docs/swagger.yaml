@@ -25,6 +25,9 @@ definitions:
       amount:
         example: 5000
         type: integer
+      currency:
+        example: NGN
+        type: string
       id:
         example: pay_12345
         type: string
@@ -44,6 +47,9 @@ definitions:
       amount:
         example: 5000
         type: integer
+      currency:
+        example: NGN
+        type: string
       id:
         example: pay_12345
         type: string
@@ -63,6 +69,9 @@ definitions:
       amount:
         example: 5000
         type: integer
+      currency:
+        example: NGN
+        type: string
       email:
         example: customer@example.com
         type: string
@@ -86,6 +95,9 @@ definitions:
       amount:
         example: 5000
         type: integer
+      currency:
+        example: NGN
+        type: string
       id:
         example: pay_12345
         type: string

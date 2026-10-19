@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/Investorharry19/go-payment/internal/payment"
 	"github.com/gofiber/fiber/v2"
@@ -13,11 +14,12 @@ import (
 
 // PaymentRequest represents the JSON body for creating a payment
 type PaymentRequest struct {
-	ID      string `json:"id" example:"pay_12345"`
-	Amount  int64  `json:"amount" example:"5000"`
-	Email   string `json:"email" example:"customer@example.com"`
-	UserId  string `json:"user_id" example:"user_123"`
-	OrderId string `json:"order_id" example:"order_123"`
+	ID       string `json:"id" example:"pay_12345"`
+	Amount   int64  `json:"amount" example:"5000"`
+	Currency string `json:"currency" example:"NGN"`
+	Email    string `json:"email" example:"customer@example.com"`
+	UserId   string `json:"user_id" example:"user_123"`
+	OrderId  string `json:"order_id" example:"order_123"`
 }
 
 // PaymentResponse represents the JSON response after creating a payment
@@ -36,6 +38,7 @@ type OperationResponse struct {
 type PaymentFullResponse struct {
 	ID         string              `json:"id" example:"pay_12345"`
 	Amount     int64               `json:"amount" example:"5000"`
+	Currency   string              `json:"currency" example:"NGN"`
 	UserId     string              `json:"user_id" example:"user_123"`
 	OrderId    string              `json:"order_id" example:"order_123"`
 	Operations []OperationResponse `json:"operations"`
@@ -43,6 +46,7 @@ type PaymentFullResponse struct {
 type PaymentResponseByID struct {
 	ID         string              `json:"id" example:"pay_12345"`
 	Amount     int64               `json:"amount" example:"5000"`
+	Currency   string              `json:"currency" example:"NGN"`
 	UserId     string              `json:"user_id" example:"user_123"`
 	OrderId    string              `json:"order_id" example:"order_123"`
 	Operations []OperationResponse `json:"operations"`
@@ -73,14 +77,24 @@ type PaymentRefundResponse = PaymentFullResponse
 // @Router /v1/payments [post]
 func CreatePaymentController(c *fiber.Ctx, store *payment.PaymentStoreDB, bank payment.Bank) error {
 	var body struct {
-		ID      string `json:"id"`
-		Amount  int64  `json:"amount"`
-		Email   string `json:"email"`
-		UserId  string `json:"user_id"`
-		OrderId string `json:"order_id"`
+		ID       string `json:"id"`
+		Amount   int64  `json:"amount"`
+		Currency string `json:"currency"`
+		Email    string `json:"email"`
+		UserId   string `json:"user_id"`
+		OrderId  string `json:"order_id"`
 	}
 	if err := c.BodyParser(&body); err != nil {
 		return c.Status(400).JSON(fiber.Map{"error": "invalid request"})
+	}
+	body.Currency = strings.ToUpper(strings.TrimSpace(body.Currency))
+	if len(body.Currency) != 3 {
+		return c.Status(400).JSON(fiber.Map{"error": "currency must be a 3-letter code"})
+	}
+	for _, char := range body.Currency {
+		if char < 'A' || char > 'Z' {
+			return c.Status(400).JSON(fiber.Map{"error": "currency must be a 3-letter code"})
+		}
 	}
 
 	env := os.Getenv("ENV")
@@ -95,6 +109,7 @@ func CreatePaymentController(c *fiber.Ctx, store *payment.PaymentStoreDB, bank p
 	req := payment.AuthorizeRequest{
 		PaymentID:   body.ID,
 		Amount:      body.Amount,
+		Currency:    body.Currency,
 		Email:       body.Email,
 		CallbackURL: fmt.Sprintf("%v/v1/payments/callback/verify", callbackUrl),
 		OperationID: "op-" + body.ID,
@@ -108,6 +123,7 @@ func CreatePaymentController(c *fiber.Ctx, store *payment.PaymentStoreDB, bank p
 	p, err := store.Create(
 		body.ID,
 		body.Amount,
+		body.Currency,
 		body.UserId,
 		body.OrderId,
 	)
@@ -133,31 +149,29 @@ func VerifyPaymentInCallbackController(c *fiber.Ctx, store *payment.PaymentStore
 	// We'll do full flow first
 
 	// STEP 2: Verify with Paystack
+	p, err := store.Get(reference)
+	if err != nil {
+		return renderHTML(c, "Payment not found", false)
+	}
+
 	verifyResp, err := bank.Verify(c.Context(), reference)
 	if err != nil {
 		return renderHTML(c, "Payment verification failed", false)
 	}
-
-	// STEP 3: Load payment from DB
-	_, err = store.Get(reference)
-	if err != nil {
-		return renderHTML(c, "Payment not found", false)
+	if err := payment.ValidateVerification(*p, verifyResp); err != nil {
+		return renderHTML(c, "Payment verification did not match", false)
+	}
+	if verifyResp.Status != payment.BankStatusSuccess {
+		return renderHTML(c, "Payment is not confirmed", false)
 	}
 
 	// Idempotency key for verification
 	opID := "verify-" + reference
 
 	// STEP 4: Apply state transition
-	var operation payment.Operation
-
-	if verifyResp.Status == "success" {
-		operation = payment.OPCapture
-	} else {
-		operation = payment.OPVoid
-	}
+	operation := payment.OPCapture
 
 	if err := store.Apply(
-		bank,
 		reference,
 		opID,
 		operation,
@@ -233,26 +247,44 @@ func RefundPaymentController(c *fiber.Ctx, store *payment.PaymentStoreDB, bank p
 		return c.Status(400).JSON(fiber.Map{"error": "invalid request"})
 	}
 
-	fmt.Println("operation:", "operation_id:", body.OperationID)
-
-	// Apply operation via DB-backed store
-	err := store.Apply(
-		bank,
-		id,
-		body.OperationID,
-		payment.OPRefund,
-	)
-	if err != nil {
-		return c.Status(400).JSON(fiber.Map{"error": err.Error()})
+	if strings.TrimSpace(body.OperationID) == "" {
+		return c.Status(400).JSON(fiber.Map{"error": "operation_id is required"})
 	}
-
-	// Fetch updated payment with operations
 	p, err := store.Get(id)
 	if err != nil {
 		return c.Status(404).JSON(fiber.Map{"error": "payment not found"})
 	}
+	if p.State != payment.Captured {
+		return c.Status(400).JSON(fiber.Map{"error": "only captured payments can be refunded"})
+	}
+	refund, err := bank.Refund(c.Context(), payment.RefundRequest{
+		Reference:   p.ID,
+		OperationID: p.ID + ":" + body.OperationID,
+		Amount:      p.Amount,
+	})
+	if err != nil {
+		return c.Status(502).JSON(fiber.Map{"error": err.Error()})
+	}
+	if refund.Status != payment.BankStatusSuccess || refund.Reference != p.ID {
+		return c.Status(409).JSON(fiber.Map{"error": "refund is not confirmed"})
+	}
 
-	return c.JSON(p)
+	// Apply operation via DB-backed store
+	if err := store.Apply(
+		id,
+		body.OperationID,
+		payment.OPRefund,
+	); err != nil {
+		return c.Status(400).JSON(fiber.Map{"error": err.Error()})
+	}
+
+	// Fetch updated payment with operations
+	updated, err := store.Get(id)
+	if err != nil {
+		return c.Status(404).JSON(fiber.Map{"error": "payment not found"})
+	}
+
+	return c.JSON(updated)
 
 }
 
@@ -311,16 +343,18 @@ func PaystackWebhookController(
 	}
 
 	// 5 Determine operation based on verification
-	var operation payment.Operation
-	if verifyResp.Status == "success" {
-		operation = payment.OPCapture
-	} else {
-		operation = payment.OPVoid
+	if err := payment.ValidateVerification(*stored, verifyResp); err != nil {
+		fmt.Printf("Paystack verification mismatch for %s: %v\n", paymentID, err)
+		return c.SendStatus(fiber.StatusOK)
 	}
+	if verifyResp.Status != payment.BankStatusSuccess {
+		return c.SendStatus(fiber.StatusOK)
+	}
+	operation := payment.OPCapture
 
 	// 6 Apply operation (idempotently)
 	opID := "webhook-" + paymentID
-	if err := store.Apply(bank, paymentID, opID, operation); err != nil {
+	if err := store.Apply(paymentID, opID, operation); err != nil {
 		fmt.Printf("Failed to apply operation for %s: %v\n", paymentID, err)
 	}
 

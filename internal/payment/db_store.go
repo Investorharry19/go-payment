@@ -17,13 +17,14 @@ func NewPaymentStoreDB(db *gorm.DB) *PaymentStoreDB {
 	return &PaymentStoreDB{DB: db}
 }
 
-func (s *PaymentStoreDB) Create(id string, amount int64, userId, orderId string) (*Payment, error) {
+func (s *PaymentStoreDB) Create(id string, amount int64, currency, userId, orderId string) (*Payment, error) {
 	p := &Payment{
-		ID:      id,
-		Amount:  amount,
-		State:   Initiated,
-		UserID:  userId,
-		OrderID: orderId,
+		ID:       id,
+		Amount:   amount,
+		Currency: currency,
+		State:    Initiated,
+		UserID:   userId,
+		OrderID:  orderId,
 	}
 
 	if err := s.DB.Create(p).Error; err != nil {
@@ -42,7 +43,6 @@ func (s *PaymentStoreDB) Get(id string) (*Payment, error) {
 }
 
 func (s *PaymentStoreDB) Apply(
-	bank Bank,
 	paymentID string,
 	operationID string,
 	operation Operation,

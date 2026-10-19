@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/Investorharry19/go-payment/internal/payment"
 )
@@ -13,6 +14,7 @@ import (
 type initializeRequest struct {
 	Email       string `json:"email"`
 	Amount      int64  `json:"amount"`
+	Currency    string `json:"currency,omitempty"`
 	CallbackURL string `json:"callback_url"`
 	Reference   string `json:"reference"`
 }
@@ -34,18 +36,15 @@ func (p *PaystackClient) Authorize(
 	payload := initializeRequest{
 		Email:       req.Email,
 		Amount:      req.Amount,
+		Currency:    strings.ToUpper(req.Currency),
 		CallbackURL: req.CallbackURL,
 		Reference:   req.PaymentID, // your internal payment ID
 	}
-
-	fmt.Println(payload.Email)
 
 	body, err := json.Marshal(payload)
 	if err != nil {
 		return payment.AuthorizeResponse{}, fmt.Errorf("marshal paystack request: %w", err)
 	}
-	fmt.Println(string(body))
-
 	httpReq, err := http.NewRequestWithContext(
 		ctx,
 		http.MethodPost,
@@ -146,7 +145,7 @@ func (p *PaystackClient) Verify(
 	// Map Paystack data to internal domain
 	return payment.VerifyResponse{
 		Reference: psResp.Data.Reference,
-		Status:    psResp.Data.Status,
+		Status:    normalizeBankStatus(psResp.Data.Status),
 		Amount:    psResp.Data.Amount,
 		Currency:  psResp.Data.Currency,
 	}, nil
@@ -179,6 +178,7 @@ func (p *PaystackClient) Refund(
 
 	httpReq.Header.Set("Authorization", "Bearer "+p.secretKey)
 	httpReq.Header.Set("Content-Type", "application/json")
+	httpReq.Header.Set("Idempotency-Key", req.OperationID)
 
 	resp, err := p.http.Do(httpReq)
 	if err != nil {
@@ -216,6 +216,19 @@ func (p *PaystackClient) Refund(
 
 	return payment.RefundResponse{
 		Reference: psResp.Data.Reference,
-		Status:    psResp.Data.Status,
+		Status:    normalizeBankStatus(psResp.Data.Status),
 	}, nil
+}
+
+func normalizeBankStatus(status string) payment.BankStatus {
+	switch strings.ToLower(strings.TrimSpace(status)) {
+	case "success", "processed":
+		return payment.BankStatusSuccess
+	case "failed", "abandoned", "reversed":
+		return payment.BankStatusFailed
+	case "pending", "processing", "ongoing", "queued":
+		return payment.BankStatusPending
+	default:
+		return payment.BankStatusUnknown
+	}
 }
